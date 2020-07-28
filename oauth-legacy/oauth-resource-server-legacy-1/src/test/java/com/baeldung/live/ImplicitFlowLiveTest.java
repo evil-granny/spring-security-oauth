@@ -17,7 +17,7 @@ import io.restassured.response.Response;
 
 public class ImplicitFlowLiveTest {
     public final static String AUTH_SERVER = "http://localhost:8081/spring-security-oauth-server";
-    public final static String RESOURCE_SERVER = "http://localhost:8082/spring-security-oauth-resource";
+    public final static String RESOURCE_SERVER = "http://localhost:8083/spring-security-oauth-resource";
 
     @Test
     public void givenUser_whenUseFooClient_thenOkForFooResourceOnly() {

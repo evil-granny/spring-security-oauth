@@ -14,6 +14,5 @@ public class AuthServerIntegrationTest {
 
     @Test
     public void whenLoadApplication_thenSuccess() {
-
     }
 }

@@ -20,19 +20,23 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.baeldung.config.AuthorizationServerApplication;
 import com.baeldung.controller.TokenController;
 
+/*We can use SpringBootTest.WebEnvironment.MOCK instead of *RANDOM_PORT*/
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { AuthorizationServerApplication.class, TokenController.class }, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = {AuthorizationServerApplication.class, TokenController.class}, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+/*@TestPropertySource(
+        locations = "classpath:application-integrationtest.properties")*/
 public class TokenControllerIntegrationTest {
 
     @Autowired
-    private TokenController sut;
+    private TokenController tokenController;
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,11 +44,11 @@ public class TokenControllerIntegrationTest {
     @SpyBean
     private TokenStore tokenStore;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
     public void shouldLoadContext() {
-        assertThat(sut).isNotNull();
+        assertThat(tokenController).isNotNull();
     }
 
     @Test
@@ -82,13 +86,15 @@ public class TokenControllerIntegrationTest {
     }
 
     private List<String> retrieveTokens() throws Exception {
-        return mapper.readValue(mockMvc.perform(get("/tokens")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), new TypeReference<List<String>>() {
+        return mapper.readValue(mockMvc.perform(get("/tokens"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), new TypeReference<List<String>>() {
         });
     }
 
     private List<OAuth2AccessToken> generateTokens(int count) {
         List<OAuth2AccessToken> result = new ArrayList<>();
-        IntStream.range(0, count).forEach(n -> result.add(new DefaultOAuth2AccessToken("token" + n)));
+        IntStream.range(0, count)
+                .forEach(number -> result.add(new DefaultOAuth2AccessToken("token" + number)));
         return result;
     }
 }

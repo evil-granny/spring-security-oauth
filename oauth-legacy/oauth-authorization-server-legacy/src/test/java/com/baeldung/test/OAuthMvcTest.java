@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -27,13 +28,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @RunWith(SpringRunner.class)
-@WebAppConfiguration
-@SpringBootTest(classes = AuthorizationServerApplication.class)
+
+//We can use annotation below only without webEnvironment = SpringBootTest.WebEnvironment.MOCK
+//That annotation is using to create WebApplicationContext
+
+//@WebAppConfiguration
+@SpringBootTest(classes = AuthorizationServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("mvc")
+@AutoConfigureMockMvc
 public class OAuthMvcTest {
 
     @Autowired
-    private WebApplicationContext wac;
+    private WebApplicationContext webApplicationContext;
 
     @Autowired
     private FilterChainProxy springSecurityFilterChain;
@@ -50,7 +56,7 @@ public class OAuthMvcTest {
 
     @Before
     public void setup() {
-        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).addFilter(springSecurityFilterChain).build();
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).addFilter(springSecurityFilterChain).build();
     }
 
     private String obtainAccessToken(String username, String password) throws Exception {
@@ -60,16 +66,12 @@ public class OAuthMvcTest {
         params.add("username", username);
         params.add("password", password);
 
-        // @formatter:off
-
         ResultActions result = mockMvc.perform(post("/oauth/token")
-                               .params(params)
-                               .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
-                               .accept(CONTENT_TYPE))
-                               .andExpect(status().isOk())
-                               .andExpect(content().contentType(CONTENT_TYPE));
-        
-        // @formatter:on
+                .params(params)
+                .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
+                .accept(CONTENT_TYPE))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(CONTENT_TYPE));
 
         String resultString = result.andReturn().getResponse().getContentAsString();
 
@@ -90,20 +92,9 @@ public class OAuthMvcTest {
     }
 
     @Test
-    public void givenToken_whenPostGetSecureRequest_thenOk() throws Exception {
+    public void givenToken_whenGetSecureRequest_thenOk() throws Exception {
         final String accessToken = obtainAccessToken("admin", "nimda");
-
         String employeeString = "{\"email\":\"" + EMAIL + "\",\"name\":\"" + NAME + "\",\"age\":30}";
-
-        // @formatter:off
-        
-        mockMvc.perform(post("/employee")
-                .header("Authorization", "Bearer " + accessToken)
-                .contentType(CONTENT_TYPE)
-                .content(employeeString)
-                .accept(CONTENT_TYPE))
-                .andExpect(status().isCreated());
-
         mockMvc.perform(get("/employee")
                 .param("email", EMAIL)
                 .header("Authorization", "Bearer " + accessToken)
@@ -111,8 +102,19 @@ public class OAuthMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(CONTENT_TYPE))
                 .andExpect(jsonPath("$.name", is(NAME)));
-        
-        // @formatter:on
+    }
+
+    @Test
+    public void givenToken_whenPostSecureRequest_thenOk() throws Exception {
+        final String accessToken = obtainAccessToken("admin", "nimda");
+        String employeeString = "{\"email\":\"" + EMAIL + "\",\"name\":\"" + NAME + "\",\"age\":30}";
+
+        mockMvc.perform(post("/employee")
+                .header("Authorization", "Bearer " + accessToken)
+                .contentType(CONTENT_TYPE)
+                .content(employeeString)
+                .accept(CONTENT_TYPE))
+                .andExpect(status().isCreated());
     }
 
 }
